@@ -1,6 +1,7 @@
 my_constants = {
+
   "Montgomery Highschool": {
-    "j_security_check": "https://parents.mtsd.k12.nj.us/genesis/sis/j_security_check",
+    "j_check": "https://parents.mtsd.k12.nj.us/genesis/sis/j_security_check",
     "home": "https://parents.mtsd.k12.nj.us/genesis/sis/view?gohome=true",
     "data": {
             "idTokenString": "",

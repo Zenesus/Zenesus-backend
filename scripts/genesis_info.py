@@ -3,22 +3,13 @@ from bs4 import BeautifulSoup
 from constants.constants import my_constants
 
 class GenesisInformation():
-    def __init__(self, username, password):
-        self.username=username
-        self.password=password
+    def __init__(self):
         pass
 
-    def get_cookie(self, session: aiohttp.ClientSession, highschool_name):
-        data = my_constants["data"]
-        data["j_username"] = self.username
-        data["j_password"] = self.password
-        self.fetch_response(session, "POST", url=my_constants[highschool_name], data=data)
-
-    @staticmethod
-    def fetch_response(session, method="GET", *args, **kwargs):
-        if method == "GET":
-            async with session.get(*args, **kwargs) as response:
-                return response, await response.text()
-        elif method == "POST":
-            async with session.post(*args, **kwargs) as response:
-                return response
+    async def get_cookie(self, email, password, session: aiohttp.ClientSession, highschool_name):
+        data = my_constants[highschool_name]["data"]
+        data["j_username"] = email
+        data["j_password"] = password
+        async with session as my_session:
+            async with my_session.post(url=my_constants[highschool_name]['j_check'], data=data) as response:
+                return response, my_session.cookie_jar.filter_cookies(my_constants[highschool_name]['j_check'])
