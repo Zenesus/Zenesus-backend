@@ -68,6 +68,7 @@ class GenesisInformation():
         url = my_constants[highschool_name]['root']+"/genesis/parents"
         html = await self.get(j_session_id, url, data)
         soup = DataExtractor(highschool_name, html, "html.parser")
+
         course_list = soup.courseIds()
 
         for course_dict in course_list:
@@ -78,6 +79,20 @@ class GenesisInformation():
                 course_data = Merge(course_data, assignments)
 
         return course_data
+
+    async def current_grades(self, highschool_name, j_session_id, student_id: int):
+        data = {
+            "tab1": "studentdata",
+            "tab2": "gradebook",
+            "tab3": "weeklysummary",
+            "action": "form",
+            "studentid": student_id
+        }
+        url = my_constants[highschool_name]['root'] + "/genesis/parents"
+        html = await self.get(j_session_id, url, data)
+        soup = DataExtractor(highschool_name, html, "html.parser")
+        curr_grades = soup.current_grades()
+        return curr_grades
 
     async def get(self, j_session_id, url, headers=None):
         async with aiohttp.ClientSession(cookies={"JSESSIONID": j_session_id}) as session:

@@ -66,8 +66,49 @@ class DataExtractor(BeautifulSoup):
 
         return (schedule_link, name, grade, student_id, state_id)
 
+    def current_grades(self):
+        grades = {
+            "grades": []
+        }
+
+        def find_grade(row):
+            teacher = grade = not_graded = "N/A"
+
+            try:
+                teacher = row.find_all("td", recursive=False)
+                teacher = teacher[1].text.split("Email:")[0].strip()
+            except AttributeError:
+                pass
+
+            try:
+                course_name = str(row.find("td").find("span").find("u").text).strip()
+            except AttributeError:
+                course_name = str(row.find("td", class_="cellLeft").text).strip()
+
+            try:
+                grade = str(row.find("td", class_="cellCenter", colspan="2").text).strip()
+            except AttributeError:
+                try:
+                    not_graded = str(row.find("td", class_="cellCenter").text).strip()
+                except AttributeError:
+                    pass
+
+            grades['grades'].append({
+                course_name: [teacher, grade, not_graded]
+            })
+
+        main_table = self.find("table", role="main")
+        main_row = main_table.find_all("tr")[1]
+        table = main_row.find("table", class_="list")
+        row_even = table.find_all("tr", class_="listroweven", recursive=False)
+        row_odd = table.find_all("tr", class_="listrowodd", recursive=False)
+
+        rows = row_even + row_odd
+        for row in rows:
+            find_grade(row)
+        return grades
+
     def courseIds(self):
-        # (id, section)
         course_list = []
 
         def get_course_and_id(row):
@@ -136,7 +177,6 @@ class DataExtractor(BeautifulSoup):
             course_namee: [],
         }
 
-
         for row in rows:
             data = row.find_all("td", class_="cellLeft")
             if len(data) != 9:
@@ -164,7 +204,8 @@ class DataExtractor(BeautifulSoup):
                 if not "Comment from" and "\nClose" in description:
                     description = data[4].find("div").text.strip().replace("\r", " ").replace("\n", " ")
                 grade_percent = data[5].find("div").text.strip()
-                grade_num = str(data[5].text).replace(grade_percent, "").replace("\r", "").replace("\n", "").replace(" ", "")
+                grade_num = str(data[5].text).replace(grade_percent, "").replace("\r", "").replace("\n", "").replace(
+                    " ", "")
 
                 comment = str(data[6].find("div").find("div").text).strip()
                 prev = data[7].text.strip()
