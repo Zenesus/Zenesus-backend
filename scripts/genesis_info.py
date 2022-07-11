@@ -32,7 +32,7 @@ class GenesisInformation():
         schedule_link, name, grade, student_id, state_id = soup.schedule(schedule)
         return (users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id)
 
-    async def course_data(self, highschool_name, j_session_id, url, mp: str, student_id: int, courseid: str, coursection: str):
+    async def course_data(self, highschool_name, j_session_id, url, mp: str, student_id: int, courseid: str, coursection: str, course_name: str):
         data = {
             "tab1": "studentdata",
             "tab2": "gradebook",
@@ -46,9 +46,15 @@ class GenesisInformation():
 
         html = await self.get(j_session_id, url, data)
         soup = DataExtractor(highschool_name, html, "html.parser")
-        soup.course_info_by_mp()
+        assignments = soup.course_work(course_name)
+        return assignments
 
     async def grade_page_data(self, highschool_name, j_session_id, student_id: int, mp: str):
+
+        def Merge(dict1, dict2):
+            dict2.update(dict1)
+            return dict2
+
         data = {
             "tab1": "studentdata",
             "tab2": "gradebook",
@@ -57,12 +63,21 @@ class GenesisInformation():
             "studentid": student_id
         }
 
+        course_data = {}
+
         url = my_constants[highschool_name]['root']+"/genesis/parents"
         html = await self.get(j_session_id, url, data)
         soup = DataExtractor(highschool_name, html, "html.parser")
         course_list = soup.courseIds()
-        for course_id, section in course_list:
-            await self.course_data(highschool_name, j_session_id, url, mp, student_id, course_id, section)
+
+        for course_dict in course_list:
+            for course_name, val in course_dict.items():
+                course_id = val[0]
+                section = val[1]
+                assignments = await self.course_data(highschool_name, j_session_id, url, mp, student_id, course_id, section, course_name)
+                course_data = Merge(course_data, assignments)
+
+        return course_data
 
     async def get(self, j_session_id, url, headers=None):
         async with aiohttp.ClientSession(cookies={"JSESSIONID": j_session_id}) as session:

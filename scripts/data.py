@@ -72,11 +72,18 @@ class DataExtractor(BeautifulSoup):
 
         def get_course_and_id(row):
             try:
-                row_data = str(row.find("td").find("span").attrs['onclick']).split("(")[1].strip(";").split(",")[1].strip(
+                row_data = str(row.find("td").find("span").attrs['onclick']).split("(")[1].strip(";").split(",")[
+                    1].strip(
                     "'").strip(")").strip("'").split(":")
                 row_course_id = row_data[0]
                 row_course_section = row_data[1]
-                course_list.append((row_course_id, row_course_section))
+
+                course_name = str(row.find("td").find("span").find("u").text).strip()
+                data = {
+                    f"{course_name}": [row_course_id, row_course_section]
+                }
+
+                course_list.append(data)
             except AttributeError:
                 pass
 
@@ -93,10 +100,96 @@ class DataExtractor(BeautifulSoup):
 
         return course_list
 
-    def course_info_by_mp(self):
+    def course_work(self, course_name):
+
+        def day_classifier(day: str):
+            if day == "Mon":
+                return "Monday"
+            elif day == "Tue":
+                return "Tuesday"
+            elif day == "Wed":
+                return "Wednesday"
+            elif day == "Thu":
+                return "Thursday"
+            elif day == "Fri":
+                return "Friday"
+            else:
+                return 0
 
         main_table = self.find("table", role="main")
         main_row = main_table.find_all("tr")[1]
         table = main_row.find("table", class_="list")
+        dates = str(table.find("tr").find("span").text)
+
+        year_begin = str(dates.split("/")[2].split()[0])
+        year_end = str(dates.split("/")[4])
+
+        row_even = table.find_all("tr", class_="listroweven", height="25px")
+
+        row_odd = table.find_all("tr", class_="listrowodd", height="25px")
+        rows = row_even + row_odd
+
+        course_namee, mp, dayname, full_dayname, date, full_date, teacher, category, assignment, description, grade_percent, grade_num, comment, prev, docs = \
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+        course_namee = course_name
+        assignments = {
+            course_namee: [],
+        }
 
 
+        for row in rows:
+            data = row.find_all("td", class_="cellLeft")
+            if len(data) != 9:
+                continue
+            mp = str(data[0].text).strip()
+            divs = data[1].find_all("div")
+            try:
+                dayname = divs[0].text
+                full_dayname = day_classifier(dayname)
+
+                month = int(str(divs[1]).split("/")[0].strip("<div>"))
+                if 7 >= month > 0:
+                    date = divs[1].text
+                    full_date = divs[1].text + "/" + year_end
+                else:
+                    date = divs[1].text
+                    full_date = divs[1].text + "/" + year_begin
+            except IndexError:
+                pass
+
+            try:
+                teacher = data[2].text.strip()
+                category = data[3].text.strip().split("\n\n\n\n\n\n\n\r\n")[1].strip()
+                assignment = data[4].find("b").text.strip()
+                if not "Comment from" and "\nClose" in description:
+                    description = data[4].find("div").text.strip().replace("\r", " ").replace("\n", " ")
+                grade_percent = data[5].find("div").text.strip()
+                grade_num = str(data[5].text).replace(grade_percent, "").replace("\r", "").replace("\n", "").replace(" ", "")
+
+                comment = str(data[6].find("div").find("div").text).strip()
+                prev = data[7].text.strip()
+                docs = data[8].text.strip()
+            except AttributeError:
+                pass
+
+            data = {
+                "mp": mp,
+                "dayname": dayname,
+                "full_dayname": full_dayname,
+                "date": date,
+                "full_date": full_date,
+                "teacher": teacher,
+                "category": category,
+                "assignment": assignment,
+                "description": description,
+                "grade_percent": grade_percent,
+                "grade_num": grade_num,
+                "comment": comment,
+                "prev": prev,
+                "docs": docs
+            }
+            assignments[course_namee].append(data)
+
+        print(assignments)
+
+        return assignments
