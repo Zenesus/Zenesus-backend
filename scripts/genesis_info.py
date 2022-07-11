@@ -4,12 +4,12 @@ from urllib.parse import urlparse
 from urllib.parse import parse_qs
 from scripts.data import DataExtractor
 
+
 class GenesisInformation():
     def __init__(self):
         pass
 
-    @staticmethod
-    async def get_cookie(email, password, session: aiohttp.ClientSession, highschool_name):
+    async def get_cookie(self, email, password, session: aiohttp.ClientSession, highschool_name):
         data = my_constants[highschool_name]["data"]
         data["j_username"] = email
         data["j_password"] = password
@@ -24,14 +24,48 @@ class GenesisInformation():
 
                 return j_id, captured_data, url
 
-    @staticmethod
-    async def front_page_data(highschool_name, j_session_id, url):
-        async with aiohttp.ClientSession(cookies={"JSESSIONID": j_session_id}) as session:
-            response = await session.get(url=url)
-            html = await response.text()
+    async def front_page_data(self, highschool_name, j_session_id, url, user: int = 0):
+        html = await self.get(j_session_id, url)
+        soup = DataExtractor(highschool_name, html, "html.parser")
+        users, whereabouts, schedule = soup.both_where_sche(user)
+        img_url, counselor_name, age, birthday, locker = soup.whereabouts(whereabouts)
+        schedule_link, name, grade, student_id, state_id = soup.schedule(schedule)
+        return (users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id)
 
-            soup = DataExtractor(highschool_name, html, "html.parser")
-            whereabouts, schedule = soup.both_where_sche()
-            img_url, counselor_name, age, locker = soup.whereabouts(whereabouts)
-            schedule_link, name, grade, student_id, state_id = soup.schedule(schedule)
-            return (img_url, counselor_name, age, locker, schedule_link, name, grade, student_id, state_id)
+    async def course_data(self, highschool_name, j_session_id, url, mp: str, student_id: int, courseid: str, coursection: str):
+        data = {
+            "tab1": "studentdata",
+            "tab2": "gradebook",
+            "tab3": "coursesummary",
+            "studentid": student_id,
+            "mp": mp,
+            "action": "form",
+            "courseCode": courseid,
+            "courseSection": coursection
+        }
+
+        html = await self.get(j_session_id, url, data)
+        soup = DataExtractor(highschool_name, html, "html.parser")
+        soup.course_info_by_mp()
+
+    async def grade_page_data(self, highschool_name, j_session_id, student_id: int, mp: str):
+        data = {
+            "tab1": "studentdata",
+            "tab2": "gradebook",
+            "tab3": "weeklysummary",
+            "action": "form",
+            "studentid": student_id
+        }
+
+        url = my_constants[highschool_name]['root']+"/genesis/parents"
+        html = await self.get(j_session_id, url, data)
+        soup = DataExtractor(highschool_name, html, "html.parser")
+        course_list = soup.courseIds()
+        for course_id, section in course_list:
+            await self.course_data(highschool_name, j_session_id, url, mp, student_id, course_id, section)
+
+    async def get(self, j_session_id, url, headers=None):
+        async with aiohttp.ClientSession(cookies={"JSESSIONID": j_session_id}) as session:
+            response = await session.get(url=url, params=headers)
+            html = await response.text()
+            return html
