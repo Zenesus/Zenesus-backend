@@ -24,15 +24,13 @@ def parse_request_data(request_data):
     STORAGE.email = email
     STORAGE.password = password
     STORAGE.highschool = highschool
-    STORAGE.mp = request_data['mp']
 
 
 def get():
     email = STORAGE.email
     password = STORAGE.password
     highschool = STORAGE.highschool
-    mp = STORAGE.mp
-    return email, password, highschool, mp
+    return email, password, highschool
 
 
 async def initialize(session, email, password, highschool):
@@ -59,7 +57,7 @@ async def getgrade():
     elif request.method == "GET":
         data = {}
         async with aiohttp.ClientSession() as session:
-            email, password, highschool, mp = get()
+            email, password, highschool = get()
             j_session_id, users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id = await initialize(
                 session, email, password, highschool)
 
@@ -81,11 +79,11 @@ async def getgrade():
 @app.route("/api/get/courseinfos", methods=["GET"])
 async def getcourseinfo():
     async with aiohttp.ClientSession() as session:
-        email, password, highschool, mp = get()
+        email, password, highschool = get()
         j_session_id, users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id = await initialize(
             session, email, password, highschool)
 
-        grade_page_data = await myInfo.grade_page_data(highschool, j_session_id, student_id, mp)
+        grade_page_data = await myInfo.grade_page_data(highschool, j_session_id, student_id)
 
         return jsonify(grade_page_data)
 
@@ -93,7 +91,7 @@ async def getcourseinfo():
 @app.route("/api/get/currentgrades", methods=["GET"])
 async def currentgrades():
     async with aiohttp.ClientSession() as session:
-        email, password, highschool, mp = get()
+        email, password, highschool = get()
         j_session_id, users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id = await initialize(
             session, email, password, highschool)
 

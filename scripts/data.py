@@ -10,6 +10,15 @@ class DataExtractor(BeautifulSoup):
         self.html = html
         self.praser = "html.praser"
 
+    def currentMarkingPeriod(self):
+        main_table = self.find("table", role="main")
+        main_row = main_table.find_all("tr")[1]
+        table = main_row.find("table", class_="list")
+        tr = table.find("tr", class_="listheading")
+        td = tr.find("td", class_="cellCenter")
+        curr_mp = td.find_all('option', selected=True)
+        return str(curr_mp.attrs['value'])
+
     def both_where_sche(self, user):
         main_tables = self.find_all("table", role="main")
         users = len(main_tables)
