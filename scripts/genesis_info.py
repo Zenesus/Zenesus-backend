@@ -49,7 +49,7 @@ class GenesisInformation():
         assignments = soup.course_work(course_name)
         return assignments
 
-    async def grade_page_data(self, highschool_name, j_session_id, student_id: int):
+    async def grade_page_data(self, highschool_name, j_session_id, student_id: int, mp: str = None):
 
         def Merge(dict1, dict2):
             dict2.update(dict1)
@@ -70,7 +70,10 @@ class GenesisInformation():
         soup = DataExtractor(highschool_name, html, "html.parser")
 
         course_list = soup.courseIds()
-        currmp = soup.currentMarkingPeriod()
+        if mp is None:
+            currmp = soup.currentMarkingPeriod()
+        else:
+            currmp = mp
 
         for course_dict in course_list:
             for course_name, val in course_dict.items():
