@@ -18,6 +18,7 @@ app.config["SECRET_KEY"] = f"{os.urandom(24).hex()}"
 STORAGE = Storage()
 STORAGE.mp = ""
 
+
 def parse_request_data(request_data):
     email = request_data['email']
     password = request_data['password']
@@ -37,11 +38,20 @@ def get():
     highschool = STORAGE.highschool
     return email, password, highschool
 
+
 def reset():
     STORAGE.email = ""
     STORAGE.password = ""
     STORAGE.highschool = ""
     STORAGE.mp = ""
+
+async def test_api(session, email, password, highschool):
+    try:
+        j_session_id, parameter_data, url = await myInfo.get_cookie(email, password, session, highschool)
+        return {"code": 420}
+    except Exception as e:
+        return {"code": 69}
+
 
 async def initialize(session, email, password, highschool):
     j_session_id, parameter_data, url = await myInfo.get_cookie(email, password, session, highschool)
@@ -56,11 +66,14 @@ async def basicInforUpdate():
         request_data = request.data
         request_data = json.loads(request_data.decode('utf-8'))
         parse_request_data(request_data)
-        return ""
+        email, password, highschool = get()
+        async with aiohttp.ClientSession() as session:
+            return test_api(session, email, password, highschool)
     elif request.method == "GET":
         data = {}
         async with aiohttp.ClientSession() as session:
             email, password, highschool = get()
+
             j_session_id, users, img_url, counselor_name, age, birthday, locker, schedule_link, name, grade, student_id, state_id = await initialize(
                 session, email, password, highschool)
 
